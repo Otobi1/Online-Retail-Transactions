@@ -2,40 +2,54 @@
 
 ## Data Collection
 
-*Source and Description*:
+*Source and Description*: Data was sourced from the [UCI Machine Learining Repository](https://archive.ics.uci.edu/ml/datasets/Online+Retail+II). Dataset is a collection of the transaction of a retail store between 1st December 2009 and 9th December 2011.
 
-*Objectives and Overview of Approaches to Analysis*:
+*Objectives and Overview of Approaches to Analysis*: Objectives includes descriptive statistics, exploration of options for collaborative filtering (user-based and item-based) and clustering techniques for customer segementation.
 
-*Data Loading*:
+*Data Loading*: The dataset consists in two parts, one on two tabs of the spreadsheet. Loading the data from each sheet requires the specification of the sheet name, in position 2 as follows.
 
-- Loading from two sheets in the same workbook
-- Merging data from the two sheets into one dataframe
+```bash
+df_09_10 = pd.read_excel('online_retail_II.xlsx', 'Year 2009-2010', index_col=None, na_values=['NA'])
+```
+
+The specification of the tab/sheet name is required for all the sheets/tabs in the workbook. After loading the dataset from each tab/sheet into a dataframe, you can place them into a list for concatenation as follows.
+
+```bash
+total_data = [data_09_10, data_10_11]
+
+retail_data = pd.concat(total_data)
+```
 
 ## Exploratory Data Analysis
 
-*Checking and Handling Missing Values*:
+*Checking and Handling Missing Values*: Asides using the standard "isnull().sum()" function of numpy, a better way to explore the proportions of missing data for each variable is to use the "plot_missing_value" function from "jcopml" library.
 
-- Checking for proportions and occurence using the jcopml's plot missing value function
+```bash
+plot_missing_value(final_retail_data, return_df = True)
+```
 
-*Handling Outliers*:
+![the outcomes of the plot_missing_value function looks like this](https://github.com/Otobi1/Online-Retail-Transactions/blob/master/image.png)
 
-- Exploring outliers in the numeric variables
+*Handling Outliers*: For transaction datasets, single extreme observations can skew the inferences drawn considerably. Hence, the need to check the distribution of the numerical variables and exclude extreme (rare) observations. The implementation of the Price variable is as follows. Same is for the Quantity variable, only need to swap out the variable name.
 
-*Plots and Distributions*:
+```bash
+Q1_price = final_retail_data['Price'].quantile(0.25)
+Q3_price = final_retail_data['Price'].quantile(0.75)
 
-- Exploring the relationship between the numeric variables
-- Identifying the dataset (transcation distribution) by country
-- Checking the unique values per variable
+IQR_price = Q3_price - Q1_price
 
-*Dataset Peculiarities*:
+LB_price = float(Q1_price) - (1.5 * IQR_price)
+UB_price = float(Q3_price) + (1.5 * IQR_price)
 
-- Exploring negative quantity transactions
-- Exploring zero price transactions
-- Aggregating transaction quantity and price by invoic date
+print ('Q1 = {}'.format(Q1_price))
+print ('Q3 = {}'.format(Q3_price))
 
-*Clean Dataset*:
+print ('IQR = Q3 - Q1 = {}'.format(IQR_price))
+print ('lower bound = Q1 - 1.5 * IQR = {}'.format(LB_price))
+print ('upper bound = Q1 - 1.5 * IQR = {}'.format(UB_price))
+```
 
-- Saving the clean data for further use
+Further explorations, including plots, distributions and dataset peculiarities can be found in this [notebook](https://github.com/Otobi1/Online-Retail-Transactions/blob/master/Online_Retail_Transactions_EDA.ipynb). It also include various implementations of aggregation techniques using the "groupby" function.
 
 ## Collaborative Filtering
 
