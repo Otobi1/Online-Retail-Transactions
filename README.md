@@ -28,7 +28,7 @@ retail_data = pd.concat(total_data)
 plot_missing_value(final_retail_data, return_df = True)
 ```
 
-![the outcomes of the plot_missing_value function looks like this](https://github.com/Otobi1/Online-Retail-Transactions/blob/master/image.png)
+![the outcomes of the plot_missing_value function looks like this](https://github.com/Otobi1/Online-Retail-Transactions/blob/master/Snapshots/Screenshot%202021-07-05%20224555.jpg)
 
 *Handling Outliers*: For transaction datasets, single extreme observations can skew the inferences drawn considerably. Hence, the need to check the distribution of the numerical variables and exclude extreme (rare) observations. The implementation of the Price variable is as follows. Same is for the Quantity variable, only need to swap out the variable name.
 
