@@ -53,21 +53,31 @@ Further explorations, including plots, distributions and dataset peculiarities c
 
 ## Collaborative Filtering
 
-*Customer-Item Matrix*:
+*Customer-Item Matrix*: first, we create a customer-item matrix to summarise the total quantity of each stock (item) each customer has purchased. The matrix will have a dimension equal to the number of the unique customers by the unique number of items (stock) to be purchased.
 
-- Using pivot tables to match the customers and the items they have bought.
-- Exploring the shape, unique values, mapping the stock purchased to 1 and items not purchased to 0
+```bash
+customer_item_matrix = clean_final_retail_data.pivot_table(index='Customer ID', columns='StockCode', values='Quantity', aggfunc='sum')
+```
 
-*User-Based Collaborative Filtering*:
+For collaborative filtering the number of items (stock) purchased is not as important as knowing whether a customer had purchased an item or not. Given that, we can map all stock purchases to 1 and those not purchased or returned to 0 using a lambda function as follows.
 
-- User to user matrix via cosine similarity
-- Listing items bought by specific users
-- Comparing listed items with between 2 users and generating list of items to recommend to either users.
+```bash
+customer_item_matrix = customer_item_matrix.applymap(lambda x: 1 if x > 0 else 0)
+```
 
-*Item-Based Collaborative Filtering*:
+*User-Based Collaborative Filtering*: a user-based collaborative filtering aims to explore the similarities and differences of each unique customer based what they've purchased within the customer-item similarity matrix. First, we use sklearn's cosine similarity to find the similarities between two or more non zero vectors. This [article](https://towardsdatascience.com/understanding-cosine-similarity-and-its-application-fd42f585296a) provides an interesting description of how cosine similarity works.
 
-- Item to item matrix via cosine similarity
-- Listing top 10 similar items
+```bash
+user_to_user_sim_matrix = pd.DataFrame(cosine_similarity(customer_item_matrix))
+```
+
+After that, we can explore the user to user similarity matrix and list out the specific items purchased by each unique customer. Subsequently, we can compare two customers on a small scale implementation and identify the products (stock/items) to be recommended to each customer based on the similarities of their purchase history.
+
+*Item-Based Collaborative Filtering*: item-based collaborative filtering on the other hand focuses on the similarities in the items (stock). Sklearn's cosine similarity is applied to a transposed customer-item similarity matrix to create an item to item similarity matrix. Lastly, the most similar items can be listed for further exploration. 
+
+The implementation of the collaborative filtering can be found [here](https://github.com/Otobi1/Online-Retail-Transactions/blob/master/Online_Retail_Transactions_Collaborative_Filtering.ipynb)
+
+Overall, collaborative filtering techniques are useful in building recommender systems, which is the foundation of several products from ad, ecommerce, movie, music recommendations.
 
 ## Customer Segmentation using K-Means Clustering based on Recency, Frequency and Monetary Value
 
