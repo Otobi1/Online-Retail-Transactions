@@ -73,7 +73,7 @@ user_to_user_sim_matrix = pd.DataFrame(cosine_similarity(customer_item_matrix))
 
 After that, we can explore the user to user similarity matrix and list out the specific items purchased by each unique customer. Subsequently, we can compare two customers on a small scale implementation and identify the products (stock/items) to be recommended to each customer based on the similarities of their purchase history.
 
-*Item-Based Collaborative Filtering*: item-based collaborative filtering on the other hand focuses on the similarities in the items (stock). Sklearn's cosine similarity is applied to a transposed customer-item similarity matrix to create an item to item similarity matrix. Lastly, the most similar items can be listed for further exploration. 
+*Item-Based Collaborative Filtering*: item-based collaborative filtering on the other hand focuses on the similarities in the items (stock). Sklearn's cosine similarity is applied to a transposed customer-item similarity matrix to create an item to item similarity matrix. Lastly, the most similar items can be listed for further exploration.
 
 The implementation of the collaborative filtering can be found [here](https://github.com/Otobi1/Online-Retail-Transactions/blob/master/Online_Retail_Transactions_Collaborative_Filtering.ipynb)
 
@@ -81,42 +81,78 @@ Overall, collaborative filtering techniques are useful in building recommender s
 
 ## Customer Segmentation using K-Means Clustering based on Recency, Frequency and Monetary Value
 
-*Estimating the Total Expenses per Customer*:
+*Estimating the Total Expenses per Customer*: first we read in the dataset and then create a new variable based on the unit price and the quantity of each item listed in the transaction dataset (feature engineering). Next, some descriptives to understand the data distribution including the proportions of transactions from each country tracked. Finally, we select only the data for the transactions only in the UK. We also restrict the transactions to those with quantities above 0.
 
-*Descriptives*:
+*Restricting Data to One Year*: to create an RFM model, we need to choose an anchor variable, in this case, the invoice date, and restrict the dataset to a complete year or month as the case may be. Then further descriptives are explored within the single year period.
 
-*Restricting Data to One Year*:
+```bash
+clean_final_retail_uk_data = clean_final_retail_uk_data[clean_final_retail_uk_data['InvoiceDate'] >= '2010-12-09']
+```
 
-*Recency*: including last purchase date
+*Recency*: to estimate the recency in the RFM model, we need to select a reference point (a specific date) to which the transactions will be compared.
 
-*Frequency*: how many invoices per customer
+```bash
+now = dt.date(2011, 12, 9)
 
-*Monetary Value*: sum of total expenses per customer.
+print (now)
+```
 
-*Merging - Single Dataset*: on CustomerID
+```bash
+recency_df = clean_final_retail_uk_data.groupby(by='CustomerID', as_index=False)['Date'].max()
 
-*Handling Outliers*:
+recency_df.columns = ['CustomerID', 'LastPurchaseDate']
 
-*Scaling*:
+recency_df['Recency'] = recency_df['LastPurchaseDate'].apply(lambda x: (now - x).days)
+```
 
-*Distribution Plots*:
+*Frequency*: will be estimated by counting the number of invoices for each unique customer.
 
-*Hopkins Statistics*:
+*Monetary Value*: estimated based on the total cost of each transaction summed for each unique customer.
 
-*Dendrogram*:
+*Merging - Single Dataset*: the recency, frequency and monetary variables are merged into a single dataset
 
-*Clustering*:
+*Handling Outliers*: for this model, it is important to effectively handle outliers as they could screw with the clustering algorithms. For instance, for recency, same frequency and monetary value as well.
 
-*Finding the Optimum K for K-Means*:
+```bash
+Q1 = rfm_df.Recency.quantile(0.25)
+Q3 = rfm_df.Recency.quantile(0.75)
 
-*Silhouette Scores and Inertia*:
+IQR = Q3 - Q1
 
-*Hierarchical Clustering*: to find the initial seeds
+rfm_df = rfm_df[(rfm_df.Recency >= (Q1 - 1.5 * IQR)) & (rfm_df.Recency <= (Q3 + 1.5 * IQR))]
+```
 
-*Modelling*:
+*Scaling*: following the handling outliers, it is important to scale the RFM variables to have instances between 0 and 1.
 
-*Categorical Plots*:
+```bash
+rfm_df['R'] = (rfm_df['Recency'] - rfm_df['Recency'].min()) / (rfm_df['Recency'].max() - rfm_df['Recency'].min())
+```
 
-*Relational Plots*:
+*Hopkins Statistics*: aims to confirm the clustering tendency for unsupervised ML, given that clustering methods would return clusters even if the data does not contain any clusters. It enables the confirmation of inherent clusters in the dataset. Then you call the function on the datset and you get the proportion of the dataset that is suitable for clustering. Based on the hypothesis, whether the dataset is uniformly distributed and contains no meaningful clusters (H0) or where it is not uniformly distributed and contains meaningful clusters (H1), we reject HO if the [Hopkins stattistic](https://sushildeore99.medium.com/really-what-is-hopkins-statistic-bad1265df4b) is greater than 0.5 (essentially close to 1).
 
-*Pairplots*:
+```bash
+def hopkins(X):
+  d = X.shape[1] # d = len(vars) # columns
+  n = len(X) # rows
+  m = int(0.1 * n)
+  nbrs = NearestNeighbors(n_neighbors=1).fit(X.values)
+
+  rand_X = sample(range(0, n, 1), m)
+
+  ujd = []
+  wjd = []
+  for j in range(0, m):
+    u_dist, _ = nbrs.kneighbors(uniform(np.amin(X, axis=0), np.amax(X, axis=0), d).reshape(1, -1), 2, return_distance=True)
+    ujd.append(u_dist[0][1])
+    w_dist, _ = nbrs.kneighbors(X.iloc[rand_X[j]].values.reshape(1, -1), 2, return_distance=True)
+    wjd.append(w_dist[0][1])
+    
+  H = sum(ujd) / (sum(ujd) + sum(wjd))
+  if isnan(H):
+    print(ujd, wjd)
+    H = 0
+
+  return H
+```
+
+*Silhouette Scores*: [silhouette score](https://dzone.com/articles/kmeans-silhouette-score-explained-with-python-exam) is used to evaluate the quality of clusters created using algorithms such as K-Means (i.e., finding the optimum K for K-Means), in terms of how well samples are clustered with other samples that are similar to each other. The value of the Silhouette score varies from -1 to 1. If the score is 1, the cluster is dense and well-separated than other clusters. A value near 0 represents overlapping clusters with samples very close to the decision boundary of the neighboring clusters. A negative score [-1, 0] indicates that the samples might have got assigned to the wrong clusters.
